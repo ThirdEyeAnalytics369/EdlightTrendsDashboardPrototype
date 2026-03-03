@@ -52,32 +52,10 @@ export default function GradeRow({
         )}
       </div>
 
-      {/* Standard cells */}
+      {/* Standard cells — only standards with data are passed in */}
       {standards.map(code => {
         const cellData = gradeData?.[code];
-        if (!cellData) {
-          // Standard not yet taught
-          return (
-            <div
-              key={code}
-              style={{
-                minWidth: 72,
-                height: 58,
-                backgroundColor: '#F0F0F0',
-                borderRadius: 4,
-                border: `1px solid ${colors.border}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: fonts.body,
-                fontSize: 14,
-                color: '#BDBDBD',
-              }}
-            >
-              —
-            </div>
-          );
-        }
+        if (!cellData) return null;
 
         const hasFlag = cellData.teachers.some(t => t.belowAverage);
         const isActive = activeCell?.grade === grade && activeCell?.standard === code;

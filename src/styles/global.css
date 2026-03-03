@@ -51,3 +51,36 @@ table {
 .expansion-panel > .expansion-content {
   overflow: hidden;
 }
+
+/* Flagged cell pulse animation */
+@keyframes flagPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.3); }
+  50% { box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.15); }
+}
+
+.flag-pulse {
+  animation: flagPulse 2s ease-in-out infinite;
+}
+
+/* Print styles */
+@media print {
+  /* Hide sidebar and header controls */
+  nav, button, .no-print {
+    display: none !important;
+  }
+
+  /* Force background colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body, html, #root {
+    background: white !important;
+  }
+
+  /* Remove shadows and borders for cleaner print */
+  div {
+    box-shadow: none !important;
+  }
+}

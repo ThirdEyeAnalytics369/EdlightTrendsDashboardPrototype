@@ -1,6 +1,8 @@
 import { colors, fonts } from '../../theme';
+import TimeFilter from '../Controls/TimeFilter';
+import ExportMenu from '../Controls/ExportMenu';
 
-export default function Header() {
+export default function Header({ dateRange, timeRange, onTimeRangeChange, onExportCSV, onExportStudentCSV, onPrint, hasDrillData }) {
   return (
     <div style={{
       display: 'flex',
@@ -9,6 +11,8 @@ export default function Header() {
       padding: '16px 24px',
       backgroundColor: colors.white,
       borderBottom: `1px solid ${colors.border}`,
+      gap: 16,
+      flexWrap: 'wrap',
     }}>
       <h1 style={{
         fontFamily: fonts.heading,
@@ -19,13 +23,27 @@ export default function Header() {
       }}>
         Westfield Elementary School
       </h1>
-      <span style={{
-        fontFamily: fonts.body,
-        fontSize: 14,
-        color: colors.gray,
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16,
       }}>
-        Sep 8 – Nov 28, 2025
-      </span>
+        <TimeFilter selected={timeRange} onChange={onTimeRangeChange} />
+        <span style={{
+          fontFamily: fonts.body,
+          fontSize: 13,
+          color: colors.gray,
+          whiteSpace: 'nowrap',
+        }}>
+          {dateRange}
+        </span>
+        <ExportMenu
+          onExportCSV={onExportCSV}
+          onExportStudentCSV={onExportStudentCSV}
+          onPrint={onPrint}
+          hasDrillData={hasDrillData}
+        />
+      </div>
     </div>
   );
 }

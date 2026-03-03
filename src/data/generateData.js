@@ -1,17 +1,21 @@
 /**
  * EdLight Trends Dashboard — Simulated Data Generator
  *
- * Generates ~5,800 rows matching EdLight's KIPP export format exactly.
+ * Generates ~12,000+ rows matching EdLight's KIPP export format exactly.
  * Each row = one student × one standard × one assignment.
  *
+ * Timeline: Sep 8, 2025 → Feb 23, 2026 (24 weeks, full first semester + start of second)
+ * Standards are taught in two passes (spiraling curriculum).
+ *
  * Embedded performance patterns:
- *   - Grade 3: DECLINING (40% → 20% Celebrate over 12 weeks)
- *   - Grade 4: STABLE (~30-35% Celebrate throughout)
- *   - Grade 5: IMPROVING (20% → 40-45% Celebrate over 12 weeks)
- *   - James Wright (3B): 15-20pt below Grade 3 avg on ≥2 standards
- *   - Omar Hassan (4C): 12-18pt below Grade 4 avg, one standard with n<10
- *   - Carlos Rivera (5B): 10-15pt below Grade 5 avg on ≥2 standards
- *   - Angela Foster (5C): ~12% N/A rate (vs ~5-8% overall)
+ *   - Grade 3: STRONG START, DECLINING — starts ~82%, drops to ~42% by February
+ *     → OA standards stay high (78-85%), NF/MD standards collapse (25-40%)
+ *   - Grade 4: MIXED BAG — OA/NBT standards consistently high (78-88%),
+ *     NF standards consistently low (35-48%), MD/G in the middle (55-65%)
+ *   - Grade 5: IMPROVING — starts ~32%, climbs to ~78% by February
+ *     → NBT/OA cross above 75% by November, NF catches up by January
+ *   - Below-average teachers: James Wright (3B), Omar Hassan (4C), Carlos Rivera (5B)
+ *   - High N/A teacher: Angela Foster (5C)
  */
 
 // ── Deterministic PRNG (mulberry32) ──────────────────────────────────────────
@@ -108,23 +112,18 @@ const MISCONCEPTION_TYPES = [
 
 // Misconception clustering weights by standard domain type
 function getMisconceptionWeights(domain, code) {
-  // Expression/equation standards (OA expressions like 5.OA.A.1, 5.OA.A.2)
   if (domain === 'OA' && (code.includes('.A.1') || code.includes('.A.2')) && code.startsWith('5.')) {
-    return [0.30, 0.10, 0.05, 0.20, 0.35, 0.00, 0.00, 0.00]; // Precision 35%, Computation 30%, Incomplete 20%
+    return [0.30, 0.10, 0.05, 0.20, 0.35, 0.00, 0.00, 0.00];
   }
-  // Computation-heavy: NBT (add, sub, multiply, divide)
   if (domain === 'NBT') {
     return [0.65, 0.18, 0.03, 0.04, 0.05, 0.01, 0.02, 0.02];
   }
-  // Conceptual: NF (fractions), OA word problems
   if (domain === 'NF' || domain === 'OA') {
     return [0.20, 0.55, 0.05, 0.05, 0.05, 0.02, 0.05, 0.03];
   }
-  // Geometry/Measurement: MD, G
   if (domain === 'MD' || domain === 'G') {
     return [0.08, 0.25, 0.04, 0.05, 0.05, 0.45, 0.05, 0.03];
   }
-  // Fallback
   return [0.25, 0.25, 0.10, 0.10, 0.10, 0.05, 0.10, 0.05];
 }
 
@@ -140,7 +139,6 @@ function pickMisconception(domain, code) {
 }
 
 function pickMisconceptions(domain, code) {
-  // 65% get 1 misconception, 30% get 2, 5% get 3
   const r = random();
   const count = r < 0.65 ? 1 : r < 0.95 ? 2 : 3;
   const types = new Set();
@@ -195,93 +193,143 @@ function generateStudentNames(count) {
 
 // ── Week dates ──────────────────────────────────────────────────────────────
 
-// 12 weeks: Sep 8 – Nov 28, 2025
+// 24 weeks: Sep 8, 2025 → Feb 23, 2026
 const WEEKS = [];
-for (let i = 0; i < 12; i++) {
+for (let i = 0; i < 24; i++) {
   const d = new Date(2025, 8, 8 + i * 7); // Month 8 = September
   const iso = d.toISOString().slice(0, 10);
   WEEKS.push(iso);
 }
 
-// Standard teaching schedule: 8 standards over 12 weeks
-// Each standard gets ~1.5 weeks, 2-3 exit tickets
+// Standard teaching schedule: 8 standards over 24 weeks (two passes)
+// Pass 1: weeks 0-11 (Sep–Nov) — initial instruction
+// Pass 2: weeks 12-23 (Dec–Feb) — spiraling review + deeper application
 function getStandardSchedule() {
-  // Returns which weeks each standard index is active
-  // We assign each standard roughly 1.5 weeks with some overlap
   return [
-    { stdIdx: 0, weeks: [0, 1] },       // Wk 1-2
-    { stdIdx: 1, weeks: [1, 2] },       // Wk 2-3
-    { stdIdx: 2, weeks: [2, 3] },       // Wk 3-4
-    { stdIdx: 3, weeks: [3, 4] },       // Wk 4-5
-    { stdIdx: 4, weeks: [5, 6] },       // Wk 6-7
-    { stdIdx: 5, weeks: [6, 7] },       // Wk 7-8
-    { stdIdx: 6, weeks: [8, 9] },       // Wk 9-10
-    { stdIdx: 7, weeks: [10, 11] },     // Wk 11-12
+    // Pass 1: Initial instruction
+    { stdIdx: 0, weeks: [0, 1] },
+    { stdIdx: 1, weeks: [1, 2] },
+    { stdIdx: 2, weeks: [3, 4] },
+    { stdIdx: 3, weeks: [4, 5] },
+    { stdIdx: 4, weeks: [6, 7] },
+    { stdIdx: 5, weeks: [7, 8] },
+    { stdIdx: 6, weeks: [9, 10] },
+    { stdIdx: 7, weeks: [10, 11] },
+    // Pass 2: Spiral review (same standards revisited)
+    { stdIdx: 0, weeks: [12, 13] },
+    { stdIdx: 1, weeks: [13, 14] },
+    { stdIdx: 2, weeks: [14, 15] },
+    { stdIdx: 3, weeks: [15, 16] },
+    { stdIdx: 4, weeks: [17, 18] },
+    { stdIdx: 5, weeks: [18, 19] },
+    { stdIdx: 6, weeks: [20, 21] },
+    { stdIdx: 7, weeks: [22, 23] },
   ];
 }
 
 // ── Grade-level Celebrate rate by week (the core patterns) ──────────────────
 
 function getGradeCelebrateRate(grade, weekIdx) {
+  // weekIdx 0-23 maps to Sep 8 – Feb 23
+  const progress = weekIdx / 23; // 0.0 to 1.0
+
   if (grade === 3) {
-    // DECLINING: 40% → 30% → 20%
-    if (weekIdx < 4) return 0.40;
-    if (weekIdx < 8) return 0.30;
-    return 0.20;
+    // STRONG START, DECLINING: 82% → 62% → 42%
+    // Steady decline as content gets harder and instruction breaks down
+    return 0.82 - progress * 0.40;
   }
   if (grade === 4) {
-    // STABLE: ~30-35%
-    return 0.32 + (random() * 0.06 - 0.03); // 29-35% with noise
+    // STABLE/MIXED: hovers around 62% with gentle noise
+    // Individual standards vary wildly (set via difficulty adjustments)
+    return 0.62 + (random() * 0.06 - 0.03);
   }
   if (grade === 5) {
-    // IMPROVING: 20% → 30% → 40-45%
-    if (weekIdx < 4) return 0.20;
-    if (weekIdx < 8) return 0.30;
-    return 0.42;
+    // IMPROVING: 32% → 55% → 78%
+    // Strong growth trajectory throughout the year
+    return 0.32 + progress * 0.46;
   }
-  return 0.30;
+  return 0.55;
+}
+
+// Per-standard difficulty adjustment
+// This is the KEY to creating variation — some standards consistently high, others consistently low
+function getStandardDifficultyAdjustment(grade, stdIdx, weekIdx) {
+  const progress = weekIdx / 23;
+
+  if (grade === 3) {
+    // OA standards (0,1,2): stay strong even as grade declines
+    // NBT (3): stays okay
+    // NF (4,5): collapse — fractions are the problem
+    // MD (6,7): decline with the grade
+    const base = [+0.12, +0.08, +0.06, +0.05, -0.15, -0.18, -0.02, -0.08];
+    // NF standards get worse over time (compounding confusion)
+    const drift = [0, 0, 0, 0, -progress * 0.10, -progress * 0.08, -progress * 0.05, -progress * 0.06];
+    return base[stdIdx] + (drift[stdIdx] || 0);
+  }
+
+  if (grade === 4) {
+    // OA (0,1): consistently HIGH — 78-88%
+    // NBT (2,3): consistently HIGH — 76-85%
+    // NF (4,5): consistently LOW — 35-48%
+    // MD (6): middle ground — 55-65%
+    // G (7): middle ground — 58-68%
+    return [+0.20, +0.16, +0.18, +0.14, -0.22, -0.18, -0.04, +0.02][stdIdx];
+  }
+
+  if (grade === 5) {
+    // Early: everything low. NBT/OA improve first, NF catches up later.
+    // By Feb: OA/NBT are well above 75%, NF is approaching 75%, MD/G are solid
+    const base = [+0.08, +0.10, +0.14, +0.06, -0.16, -0.12, +0.02, +0.04];
+    // OA/NBT get bonus improvement over time, NF catches up
+    const drift = [+progress * 0.08, +progress * 0.06, +progress * 0.06, +progress * 0.08,
+                   +progress * 0.12, +progress * 0.10, +progress * 0.04, +progress * 0.02];
+    return base[stdIdx] + drift[stdIdx];
+  }
+
+  return 0;
 }
 
 // Teacher-level adjustment: below-average teachers get penalized
-function getTeacherAdjustment(grade, teacherName) {
+function getTeacherAdjustment(grade, teacherName, stdIdx) {
   // Below-average teachers
-  if (grade === 3 && teacherName === 'James Wright') return -0.18; // 15-20pt below
-  if (grade === 4 && teacherName === 'Omar Hassan') return -0.15;  // 12-18pt below
-  if (grade === 5 && teacherName === 'Carlos Rivera') return -0.12; // 10-15pt below
+  if (grade === 3 && teacherName === 'James Wright') {
+    // Struggles most with fractions (std 4,5) and later standards
+    return stdIdx >= 4 ? -0.20 : -0.12;
+  }
+  if (grade === 4 && teacherName === 'Omar Hassan') {
+    // Below average on NF standards specifically
+    return (stdIdx === 4 || stdIdx === 5) ? -0.18 : -0.08;
+  }
+  if (grade === 5 && teacherName === 'Carlos Rivera') {
+    // Uniformly below, but improving less than peers
+    return -0.12;
+  }
   // Normal teachers are close to grade average
-  return randomInt(-2, 3) / 100; // ±2-3pt noise
+  return randomInt(-2, 3) / 100;
 }
 
 // N/A rate by teacher
 function getNaRate(teacherName) {
-  if (teacherName === 'Angela Foster') return 0.12; // ~12%
-  return 0.05 + random() * 0.03; // 5-8% for everyone else
+  if (teacherName === 'Angela Foster') return 0.12;
+  return 0.05 + random() * 0.03;
 }
 
 // ── Mastery classification ──────────────────────────────────────────────────
 
 function classifyStudent(celebrateRate, naRate) {
   const r = random();
-
-  // First check N/A
   if (r < naRate) {
     return { mastery: '4. N/A', sortOrder: 4, overall: null };
   }
-
   const effectiveR = (r - naRate) / (1 - naRate);
-
   if (effectiveR < celebrateRate) {
     return { mastery: '1. Celebrate', sortOrder: 1, overall: 0 };
   }
-
-  // Remaining split between Support (~40-50% of non-celebrate) and Intervene
-  const supportRate = 0.45 + random() * 0.1; // 45-55% of remainder
+  const supportRate = 0.45 + random() * 0.1;
   const remainingR = (effectiveR - celebrateRate) / (1 - celebrateRate);
-
   if (remainingR < supportRate) {
     return { mastery: '2. Support', sortOrder: 2, overall: randomInt(1, 2) };
   }
-
   return { mastery: '3. Intervene', sortOrder: 3, overall: randomInt(3, 4) };
 }
 
@@ -289,9 +337,11 @@ function classifyStudent(celebrateRate, naRate) {
 
 function getAssignmentDate(weekDate, lessonInWeek) {
   const d = new Date(weekDate);
-  // Lessons on Mon(0), Wed(2), Fri(4)
   const dayOffset = lessonInWeek === 0 ? 0 : lessonInWeek === 1 ? 2 : 4;
   d.setDate(d.getDate() + dayOffset);
+  // Cap at Feb 25, 2026
+  const cap = new Date('2026-02-25');
+  if (d > cap) return cap.toISOString().slice(0, 10);
   return d.toISOString().slice(0, 10);
 }
 
@@ -309,10 +359,7 @@ export function generateData() {
     const standards = STANDARDS[grade];
 
     for (const teacher of teachers) {
-      // Generate students for this teacher
       const numStudents = randomInt(25, 30);
-
-      // Special case: Omar Hassan gets a small class for one standard
       const isOmarHassan = teacher.name === 'Omar Hassan';
 
       const studentNames = generateStudentNames(numStudents);
@@ -322,20 +369,18 @@ export function generateData() {
       }));
       studentIdCounter += numStudents;
 
-      // For each standard on the schedule
       for (let si = 0; si < schedule.length; si++) {
         const { stdIdx, weeks: activeWeeks } = schedule[si];
         const standard = standards[stdIdx];
 
-        // Omar Hassan: for the last standard (index 7), only 7 students do assignments
-        const activeStudents = (isOmarHassan && stdIdx === 7)
+        // Omar Hassan: for the last standard (index 7), only 7 students on first pass
+        const activeStudents = (isOmarHassan && stdIdx === 7 && si < 8)
           ? students.slice(0, 7)
           : students;
 
         let moduleNum = stdIdx + 1;
-        let lessonNum = 0;
+        let lessonNum = si >= 8 ? 3 : 0; // Pass 2 starts at lesson 4
 
-        // Generate 2-3 exit tickets across the active weeks
         for (const weekIdx of activeWeeks) {
           const weekDate = WEEKS[weekIdx];
           const lessonsThisWeek = weekIdx === activeWeeks[0] ? 2 : 1;
@@ -343,30 +388,27 @@ export function generateData() {
           for (let l = 0; l < lessonsThisWeek; l++) {
             lessonNum++;
             const assignmentDate = getAssignmentDate(weekDate, l);
-            const assignmentName = `Module ${moduleNum} - Lesson ${lessonNum} - Exit Ticket`;
+            const passLabel = si >= 8 ? ' (Review)' : '';
+            const assignmentName = `Module ${moduleNum} - Lesson ${lessonNum} - Exit Ticket${passLabel}`;
 
-            // Get the celebrate rate for this grade/week/teacher
             const baseCelebRate = getGradeCelebrateRate(grade, weekIdx);
-            const teacherAdj = getTeacherAdjustment(grade, teacher.name);
+            const teacherAdj = getTeacherAdjustment(grade, teacher.name, stdIdx);
 
-            // Below-average teachers are penalized on at least 2 standards
-            // Apply the full penalty on standards 0-1 and 4-5, partial on others
             let effectiveAdj = teacherAdj;
             if (teacherAdj < -0.05) {
-              // This is a below-average teacher
-              if (stdIdx >= 2 && stdIdx <= 3) {
-                effectiveAdj = teacherAdj * 0.3; // Partial penalty on middle standards
+              // Below-average: full penalty on target standards, partial elsewhere
+              if (grade === 3 && teacherAdj < -0.15 && stdIdx < 4) {
+                effectiveAdj = teacherAdj * 0.5;
               }
-              // Full penalty on standards 0-1, 4-7
             }
 
-            const celebrateRate = Math.max(0.05, Math.min(0.90, baseCelebRate + effectiveAdj));
+            const stdDiffAdj = getStandardDifficultyAdjustment(grade, stdIdx, weekIdx);
+            const celebrateRate = Math.max(0.05, Math.min(0.92, baseCelebRate + effectiveAdj + stdDiffAdj));
             const naRate = getNaRate(teacher.name);
 
             for (const student of activeStudents) {
               const classification = classifyStudent(celebrateRate, naRate);
 
-              // Assign misconceptions only for Support or Intervene
               let misconceptions = null;
               if (classification.mastery === '2. Support' || classification.mastery === '3. Intervene') {
                 misconceptions = pickMisconceptions(standard.domain, standard.code);

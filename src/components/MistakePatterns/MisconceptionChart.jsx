@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { colors, fonts } from '../../theme';
+import TeacherMisconceptionBreakdown from './TeacherMisconceptionBreakdown';
 
-export default function MisconceptionChart({ misconceptions }) {
+export default function MisconceptionChart({ misconceptions, teachers }) {
   const [showAll, setShowAll] = useState(false);
+  const [view, setView] = useState('aggregated'); // 'aggregated' | 'byTeacher'
 
   if (!misconceptions || misconceptions.length === 0) {
     return (
@@ -30,92 +32,121 @@ export default function MisconceptionChart({ misconceptions }) {
     count: m.count,
   }));
 
+  const hasTeachers = teachers && teachers.length > 0 && teachers.some(t => t.misconceptions?.length > 0);
+
   return (
     <div>
-      <h4 style={{
-        fontFamily: fonts.heading,
-        fontWeight: 700,
-        fontSize: 13,
-        color: colors.navy,
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 12,
       }}>
-        Mistake Patterns
-      </h4>
+        <h4 style={{
+          fontFamily: fonts.heading,
+          fontWeight: 700,
+          fontSize: 13,
+          color: colors.navy,
+          margin: 0,
+        }}>
+          Mistake Patterns
+        </h4>
 
-      <ResponsiveContainer width="100%" height={displayed.length * 36 + 8}>
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 0, right: 60, bottom: 0, left: 10 }}
-        >
-          <XAxis type="number" domain={[0, 100]} hide />
-          <YAxis
-            type="category"
-            dataKey="name"
-            width={100}
-            tick={{
-              fontFamily: "'Archivo', sans-serif",
-              fontSize: 11,
-              fill: colors.gray,
-            }}
-          />
-          <RechartsTooltip
-            formatter={(value, name, props) => [
-              `${props.payload.percent}% (${props.payload.count} students)`,
-              props.payload.fullName,
-            ]}
-            contentStyle={{
-              fontFamily: "'Archivo', sans-serif",
-              fontSize: 12,
-              borderRadius: 4,
-              border: `1px solid ${colors.border}`,
-            }}
-          />
-          <Bar dataKey="percent" radius={[0, 4, 4, 0]} barSize={20}>
-            {chartData.map((entry, index) => (
-              <Cell
-                key={index}
-                fill={colors.purple}
-                fillOpacity={1 - index * 0.15}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-
-      {/* Percentage labels to the right of bars */}
-      <div style={{ marginTop: -4 }}>
-        {displayed.map((m, i) => (
-          <div key={i} style={{
-            fontFamily: fonts.body,
-            fontSize: 11,
-            color: colors.gray,
-            textAlign: 'right',
-            paddingRight: 4,
-            lineHeight: '36px',
-            display: 'none', // Using Recharts built-in labels instead
+        {hasTeachers && (
+          <div style={{
+            display: 'flex',
+            gap: 2,
+            backgroundColor: '#F0F0F0',
+            borderRadius: 4,
+            padding: 2,
           }}>
-            {m.percent}% ({m.count})
+            {['aggregated', 'byTeacher'].map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                style={{
+                  fontFamily: fonts.body,
+                  fontSize: 11,
+                  fontWeight: view === v ? 600 : 400,
+                  color: view === v ? colors.white : colors.gray,
+                  backgroundColor: view === v ? colors.purple : 'transparent',
+                  borderRadius: 3,
+                  padding: '3px 8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 150ms',
+                }}
+              >
+                {v === 'aggregated' ? 'Aggregated' : 'By Teacher'}
+              </button>
+            ))}
           </div>
-        ))}
+        )}
       </div>
 
-      {hasMore && (
-        <button
-          onClick={() => setShowAll(!showAll)}
-          style={{
-            fontFamily: fonts.body,
-            fontSize: 12,
-            color: colors.purple,
-            padding: '4px 0',
-            marginTop: 4,
-            cursor: 'pointer',
-            border: 'none',
-            background: 'none',
-          }}
-        >
-          {showAll ? 'Show less' : `Show all (${misconceptions.length})`}
-        </button>
+      {view === 'aggregated' ? (
+        <>
+          <ResponsiveContainer width="100%" height={displayed.length * 36 + 8}>
+            <BarChart
+              data={chartData}
+              layout="vertical"
+              margin={{ top: 0, right: 60, bottom: 0, left: 10 }}
+            >
+              <XAxis type="number" domain={[0, 100]} hide />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={100}
+                tick={{
+                  fontFamily: "'Archivo', sans-serif",
+                  fontSize: 11,
+                  fill: colors.gray,
+                }}
+              />
+              <RechartsTooltip
+                formatter={(value, name, props) => [
+                  `${props.payload.percent}% (${props.payload.count} students)`,
+                  props.payload.fullName,
+                ]}
+                contentStyle={{
+                  fontFamily: "'Archivo', sans-serif",
+                  fontSize: 12,
+                  borderRadius: 4,
+                  border: `1px solid ${colors.border}`,
+                }}
+              />
+              <Bar dataKey="percent" radius={[0, 4, 4, 0]} barSize={20}>
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={index}
+                    fill={colors.purple}
+                    fillOpacity={1 - index * 0.15}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+
+          {hasMore && (
+            <button
+              onClick={() => setShowAll(!showAll)}
+              style={{
+                fontFamily: fonts.body,
+                fontSize: 12,
+                color: colors.purple,
+                padding: '4px 0',
+                marginTop: 4,
+                cursor: 'pointer',
+                border: 'none',
+                background: 'none',
+              }}
+            >
+              {showAll ? 'Show less' : `Show all (${misconceptions.length})`}
+            </button>
+          )}
+        </>
+      ) : (
+        <TeacherMisconceptionBreakdown teachers={teachers} />
       )}
     </div>
   );

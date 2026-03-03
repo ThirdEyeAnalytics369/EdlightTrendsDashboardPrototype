@@ -26,6 +26,7 @@ export default function HeatMapCell({
   return (
     <Tooltip text={tooltipText}>
       <div
+        className={hasFlag && hasEnoughData ? 'flag-pulse' : undefined}
         onClick={hasEnoughData ? onClick : undefined}
         style={{
           minWidth: 72,
@@ -42,7 +43,9 @@ export default function HeatMapCell({
           justifyContent: 'center',
           cursor: hasEnoughData ? 'pointer' : 'default',
           position: 'relative',
-          transition: 'filter 150ms, border-color 150ms',
+          transition: 'filter 150ms, border-color 150ms, transform 150ms, box-shadow 150ms',
+          transform: isActive ? 'scale(1.05)' : 'scale(1)',
+          boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
           gap: 2,
         }}
         onMouseEnter={e => { if (hasEnoughData) e.currentTarget.style.filter = 'brightness(1.1)'; }}

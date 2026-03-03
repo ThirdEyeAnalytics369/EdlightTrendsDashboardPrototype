@@ -64,6 +64,26 @@ export default function StudentList({ students }) {
           })}
         </tbody>
       </table>
+
+      {/* View Classroom Insights link */}
+      <div style={{
+        padding: '10px 16px',
+        borderTop: `1px solid ${colors.border}`,
+        backgroundColor: '#FAFAFA',
+        textAlign: 'right',
+      }}>
+        <span
+          style={{
+            fontFamily: fonts.body,
+            fontSize: 12,
+            fontWeight: 500,
+            color: colors.purple,
+            cursor: 'pointer',
+          }}
+        >
+          View Classroom Insights →
+        </span>
+      </div>
     </div>
   );
 }

@@ -154,8 +154,8 @@ export function aggregateByGradeStandard(rawData) {
 
     if (!result[grade]) result[grade] = {};
 
-    // Grade-standard level stats (per unique student)
-    const stats = calculateStudentCelebratePercent(rows);
+    // Grade-standard level stats (all assessments in window)
+    const stats = calculateCelebratePercent(rows);
 
     // Group by teacher
     const teacherGroups = {};
@@ -167,7 +167,7 @@ export function aggregateByGradeStandard(rawData) {
 
     // Build teacher summaries
     const teachers = Object.entries(teacherGroups).map(([teacherName, tRows]) => {
-      const tStats = calculateStudentCelebratePercent(tRows);
+      const tStats = calculateCelebratePercent(tRows);
 
       // Group by student (most recent assignment for each student)
       const studentMap = {};
@@ -189,6 +189,27 @@ export function aggregateByGradeStandard(rawData) {
       const masteryOrder = { '3. Intervene': 0, '2. Support': 1, '1. Celebrate': 2, '4. N/A': 3 };
       students.sort((a, b) => (masteryOrder[a.currentMastery] ?? 4) - (masteryOrder[b.currentMastery] ?? 4));
 
+      // Per-teacher misconception aggregation
+      const tMiscCounts = {};
+      let tMiscTotal = 0;
+      for (const row of tRows) {
+        if (row['Mastery'] === '2. Support' || row['Mastery'] === '3. Intervene') {
+          const types = parseMisconceptions(row['Misconceptions']);
+          for (const type of types) {
+            tMiscCounts[type] = (tMiscCounts[type] || 0) + 1;
+            tMiscTotal++;
+          }
+        }
+      }
+      const teacherMisconceptions = Object.entries(tMiscCounts)
+        .map(([type, count]) => ({
+          type,
+          abbreviation: getAbbreviation(type),
+          count,
+          percent: tMiscTotal > 0 ? Math.round((count / tMiscTotal) * 100) : 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+
       return {
         teacherName,
         teacherEmail: tRows[0]['Teacher Email'],
@@ -202,6 +223,7 @@ export function aggregateByGradeStandard(rawData) {
         belowAverage: false, // computed in computeFlags
         declining: false,
         students,
+        misconceptions: teacherMisconceptions,
       };
     });
 
@@ -372,3 +394,37 @@ export const DOMAIN_NAMES = {
   'MD': 'Measurement & Data',
   'G': 'Geometry',
 };
+
+// ── Date range helpers ──────────────────────────────────────────────────────
+
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatDateLabel(dateStr) {
+  const [y, m, d] = dateStr.split('-');
+  return `${MONTH_ABBR[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+}
+
+/**
+ * Compute a human-readable date range label from filtered data.
+ */
+export function getDateRangeLabel(data) {
+  if (!data || data.length === 0) return 'No data';
+  const dates = data.map(r => r['Assignment Date']).sort();
+  return `${formatDateLabel(dates[0])} – ${formatDateLabel(dates[dates.length - 1])}`;
+}
+
+/**
+ * Filter raw data by a time range (number of days back from the latest date).
+ * Returns all data if days is null.
+ */
+export function filterByTimeRange(rawData, days) {
+  if (!days) return rawData;
+
+  const allDates = rawData.map(r => r['Assignment Date']).sort();
+  const latestDate = new Date(allDates[allDates.length - 1] + 'T00:00:00');
+  const cutoffDate = new Date(latestDate);
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoffStr = cutoffDate.toISOString().slice(0, 10);
+
+  return rawData.filter(r => r['Assignment Date'] >= cutoffStr);
+}

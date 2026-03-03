@@ -8,7 +8,10 @@ import Breadcrumb from './components/DrillDown/Breadcrumb';
 import TeacherCards from './components/DrillDown/TeacherCards';
 import StudentList from './components/DrillDown/StudentList';
 import MisconceptionChart from './components/MistakePatterns/MisconceptionChart';
-import { aggregateByGradeStandard, getStandardDescription } from './data/dataUtils';
+import { aggregateByGradeStandard, getStandardDescription, getDateRangeLabel, filterByTimeRange, computeGradeTrends } from './data/dataUtils';
+import { generateInsights } from './data/insightEngine';
+import InsightPanel from './components/Insights/InsightPanel';
+import { generateHeatMapCSV, generateStudentCSV, downloadCSV, printView } from './lib/exportUtils';
 import { colors, fonts, sizing } from './theme';
 import rawData from './data/data.json';
 
@@ -21,8 +24,25 @@ import rawData from './data/data.json';
 
 export default function App() {
   const [drillState, setDrillState] = useState(null);
+  const [timeRange, setTimeRange] = useState(null); // null = "All"
 
-  const gradeStandardData = useMemo(() => aggregateByGradeStandard(rawData), []);
+  // Collapse drill-down when time filter changes
+  const handleTimeRangeChange = useCallback((newRange) => {
+    setTimeRange(newRange);
+    setDrillState(null);
+  }, []);
+
+  // Filter data by time range
+  const filteredData = useMemo(() => filterByTimeRange(rawData, timeRange), [timeRange]);
+
+  // Date range label
+  const dateRange = useMemo(() => getDateRangeLabel(filteredData), [filteredData]);
+
+  const gradeStandardData = useMemo(() => aggregateByGradeStandard(filteredData), [filteredData]);
+
+  // Compute trends and insights
+  const gradeTrends = useMemo(() => computeGradeTrends(filteredData), [filteredData]);
+  const insights = useMemo(() => generateInsights(gradeStandardData, gradeTrends), [gradeStandardData, gradeTrends]);
 
   // Active cell for heat map highlighting
   const activeCell = drillState ? { grade: drillState.grade, standard: drillState.standard } : null;
@@ -88,17 +108,40 @@ export default function App() {
     return result;
   }, [drillState, gradeStandardData]);
 
+  // Export handlers
+  const handleExportCSV = useCallback(() => {
+    const csv = generateHeatMapCSV(gradeStandardData);
+    downloadCSV(csv, 'edlight-heatmap-summary.csv');
+  }, [gradeStandardData]);
+
+  const handleExportStudentCSV = useCallback(() => {
+    if (!drillData || !drillState) return;
+    const csv = generateStudentCSV(drillData, drillState);
+    if (csv) downloadCSV(csv, `edlight-students-${drillState.standard}.csv`);
+  }, [drillData, drillState]);
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Header />
+        <Header
+          dateRange={dateRange}
+          timeRange={timeRange}
+          onTimeRangeChange={handleTimeRangeChange}
+          onExportCSV={handleExportCSV}
+          onExportStudentCSV={handleExportStudentCSV}
+          onPrint={printView}
+          hasDrillData={!!drillData}
+        />
 
         <MainContent>
+          {/* Auto-surfacing insights */}
+          <InsightPanel insights={insights} />
+
           {/* Heat Map */}
           <HeatMap
-            data={rawData}
+            data={filteredData}
             activeCell={activeCell}
             onCellClick={handleCellClick}
           />
@@ -149,7 +192,7 @@ export default function App() {
                     </ExpansionPanel>
                   </div>
 
-                  <MisconceptionChart misconceptions={drillData.misconceptions} />
+                  <MisconceptionChart misconceptions={drillData.misconceptions} teachers={drillData.teachers} />
                 </div>
               </div>
             )}
