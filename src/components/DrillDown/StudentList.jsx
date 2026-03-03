@@ -1,9 +1,58 @@
+import { useState, useMemo } from 'react';
 import { colors, fonts } from '../../theme';
 import Badge from '../common/Badge';
 import Tag from '../common/Tag';
 import { parseMisconceptions } from '../../data/dataUtils';
 
+const MASTERY_ORDER = { '3. Intervene': 0, '2. Support': 1, '1. Celebrate': 2, '4. N/A': 3 };
+
 export default function StudentList({ students }) {
+  const [sortKey, setSortKey] = useState('mastery'); // 'name' | 'mastery' | 'misconception'
+  const [sortDir, setSortDir] = useState('asc');
+
+  const handleSort = (key) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const sortedStudents = useMemo(() => {
+    const arr = [...students];
+    const dir = sortDir === 'asc' ? 1 : -1;
+
+    arr.sort((a, b) => {
+      if (sortKey === 'name') {
+        return dir * a.studentName.localeCompare(b.studentName);
+      }
+      if (sortKey === 'mastery') {
+        const aOrder = MASTERY_ORDER[a.currentMastery] ?? 4;
+        const bOrder = MASTERY_ORDER[b.currentMastery] ?? 4;
+        return dir * (aOrder - bOrder);
+      }
+      if (sortKey === 'misconception') {
+        const aMisc = parseMisconceptions(a.misconception);
+        const bMisc = parseMisconceptions(b.misconception);
+        const aFirst = aMisc.length > 0 ? aMisc[0] : '';
+        const bFirst = bMisc.length > 0 ? bMisc[0] : '';
+        // Empty misconceptions sort last
+        if (!aFirst && bFirst) return dir;
+        if (aFirst && !bFirst) return -dir;
+        return dir * aFirst.localeCompare(bFirst);
+      }
+      return 0;
+    });
+
+    return arr;
+  }, [students, sortKey, sortDir]);
+
+  const arrow = (key) => {
+    if (sortKey !== key) return ' ↕';
+    return sortDir === 'asc' ? ' ↑' : ' ↓';
+  };
+
   return (
     <div style={{
       marginTop: 12,
@@ -14,13 +63,28 @@ export default function StudentList({ students }) {
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ backgroundColor: '#FAFAFA' }}>
-            <th style={thStyle}>Student Name</th>
-            <th style={{ ...thStyle, textAlign: 'center' }}>Mastery</th>
-            <th style={thStyle}>Misconceptions</th>
+            <th
+              style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('name')}
+            >
+              Student Name{arrow('name')}
+            </th>
+            <th
+              style={{ ...thStyle, textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('mastery')}
+            >
+              Mastery{arrow('mastery')}
+            </th>
+            <th
+              style={{ ...thStyle, cursor: 'pointer', userSelect: 'none' }}
+              onClick={() => handleSort('misconception')}
+            >
+              Misconceptions{arrow('misconception')}
+            </th>
           </tr>
         </thead>
         <tbody>
-          {students.map((student, i) => {
+          {sortedStudents.map((student, i) => {
             const misconceptions = parseMisconceptions(student.misconception);
             return (
               <tr
