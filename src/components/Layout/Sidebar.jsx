@@ -4,11 +4,14 @@ export default function Sidebar() {
   return (
     <div style={{
       width: 240,
-      minHeight: '100vh',
+      height: '100vh',
+      position: 'sticky',
+      top: 0,
       backgroundColor: colors.navy,
       display: 'flex',
       flexDirection: 'column',
       padding: '24px 0',
+      flexShrink: 0,
     }}>
       {/* Logo */}
       <div style={{
