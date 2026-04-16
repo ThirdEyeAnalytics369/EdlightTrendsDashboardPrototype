@@ -15,7 +15,7 @@ export default function TrendArrow({ trend, baseline, current, diff, grade }) {
   return (
     <Tooltip text={tooltipText}>
       <span style={{
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: 700,
         color,
         lineHeight: 1,

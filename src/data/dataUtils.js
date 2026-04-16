@@ -339,6 +339,72 @@ export function computeGradeTrends(rawData) {
 }
 
 /**
+ * Rule 5b: Standard-level declining/improving trend computation.
+ * For each grade+standard combo, splits rows into "early" (first 40% of time range)
+ * and "recent" (last 40% of time range), then compares Celebrate %.
+ * Uses a 10-point threshold (lower than grade-level's 15 because standard-level data is noisier).
+ * Requires at least 10 valid (non-N/A) records in BOTH early and recent windows.
+ * Returns: { [grade]: { [standardCode]: { early, recent, diff, trend } } }
+ */
+export function computeStandardTrends(rawData) {
+  const trends = {};
+
+  // Get sorted unique assignment dates across the whole dataset
+  const allDates = [...new Set(rawData.map(r => r['Assignment Date']))].sort();
+  if (allDates.length < 2) return trends;
+
+  // Determine the 40% boundary indices
+  const earlyEnd = Math.ceil(allDates.length * 0.4);
+  const recentStart = allDates.length - Math.ceil(allDates.length * 0.4);
+
+  const earlyDates = new Set(allDates.slice(0, earlyEnd));
+  const recentDates = new Set(allDates.slice(recentStart));
+
+  // Group by grade + standard
+  const groups = {};
+  for (const row of rawData) {
+    const key = `${row['Grade']}_${row['Standard']}`;
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(row);
+  }
+
+  for (const [key, rows] of Object.entries(groups)) {
+    const [gradeStr, standardCode] = key.split('_');
+    const grade = parseInt(gradeStr, 10);
+
+    if (!trends[grade]) trends[grade] = {};
+
+    const earlyRows = rows.filter(r => earlyDates.has(r['Assignment Date']));
+    const recentRows = rows.filter(r => recentDates.has(r['Assignment Date']));
+
+    // Calculate Celebrate % for each window (using same N/A exclusion logic)
+    const earlyNonNA = earlyRows.filter(r => r['Mastery'] !== '4. N/A');
+    const recentNonNA = recentRows.filter(r => r['Mastery'] !== '4. N/A');
+
+    // Require at least 10 valid records in BOTH windows
+    if (earlyNonNA.length < 10 || recentNonNA.length < 10) {
+      trends[grade][standardCode] = { early: null, recent: null, diff: 0, trend: 'stable' };
+      continue;
+    }
+
+    const earlyCelebrate = earlyNonNA.filter(r => r['Mastery'] === '1. Celebrate').length;
+    const recentCelebrate = recentNonNA.filter(r => r['Mastery'] === '1. Celebrate').length;
+
+    const earlyPercent = Math.round((earlyCelebrate / earlyNonNA.length) * 100);
+    const recentPercent = Math.round((recentCelebrate / recentNonNA.length) * 100);
+    const diff = recentPercent - earlyPercent;
+
+    let trend = 'stable';
+    if (diff <= -10) trend = 'declining';
+    else if (diff >= 10) trend = 'improving';
+
+    trends[grade][standardCode] = { early: earlyPercent, recent: recentPercent, diff, trend };
+  }
+
+  return trends;
+}
+
+/**
  * Calculate overall Celebrate % for a grade across all standards.
  */
 export function calculateGradeOverall(rawData, grade) {
@@ -414,12 +480,22 @@ export function getDateRangeLabel(data) {
 }
 
 /**
- * Filter raw data by a time range (number of days back from the latest date).
- * Returns all data if days is null.
+ * Filter raw data by a time range.
+ * @param {Array} rawData - raw data rows
+ * @param {null|number|{start: string, end: string}} range - null for all data,
+ *   a number of days back from the latest date, or a {start, end} date object.
+ * Returns all data if range is null.
  */
-export function filterByTimeRange(rawData, days) {
-  if (!days) return rawData;
+export function filterByTimeRange(rawData, range) {
+  if (!range) return rawData;
 
+  // Custom date range object
+  if (typeof range === 'object' && range.start && range.end) {
+    return rawData.filter(r => r['Assignment Date'] >= range.start && r['Assignment Date'] <= range.end);
+  }
+
+  // Existing days-based logic
+  const days = range;
   const allDates = rawData.map(r => r['Assignment Date']).sort();
   const latestDate = new Date(allDates[allDates.length - 1] + 'T00:00:00');
   const cutoffDate = new Date(latestDate);

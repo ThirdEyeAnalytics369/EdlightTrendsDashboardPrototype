@@ -36,6 +36,15 @@ export default function TeacherMisconceptionBreakdown({ teachers }) {
 
   return (
     <div>
+      <p style={{
+        fontFamily: fonts.body,
+        fontSize: 11,
+        color: colors.gray,
+        fontStyle: 'italic',
+        margin: '0 0 8px 0',
+      }}>
+        Compare error patterns across teachers to identify shared instructional needs and strengths.
+      </p>
       <ResponsiveContainer width="100%" height={sortedTypes.length * 48 + 40}>
         <BarChart
           data={chartData}

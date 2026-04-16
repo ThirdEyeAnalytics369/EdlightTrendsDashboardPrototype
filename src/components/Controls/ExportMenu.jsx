@@ -18,7 +18,7 @@ export default function ExportMenu({ onExportCSV, onExportStudentCSV, onPrint, h
   }, [open]);
 
   return (
-    <div ref={menuRef} style={{ position: 'relative' }}>
+    <div ref={menuRef} data-print-hide style={{ position: 'relative' }}>
       <button
         onClick={() => setOpen(!open)}
         style={{

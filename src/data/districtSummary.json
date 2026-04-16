@@ -1,0 +1,53 @@
+{
+  "districtName": "Westfield Unified School District",
+  "schools": [
+    {
+      "name": "Westfield Elementary School",
+      "slug": "westfield-elementary",
+      "overallCelebratePercent": 58,
+      "totalStudents": 250,
+      "totalTeachers": 9,
+      "redCellCount": 5,
+      "decliningGrades": 2,
+      "flaggedTeachers": 1,
+      "trend": "declining",
+      "topConcern": "Grade 3 Number and Operations—Fractions — James Wright's class (3B) 11pts below avg"
+    },
+    {
+      "name": "Lincoln Heights Elementary School",
+      "slug": "lincoln-heights",
+      "overallCelebratePercent": 59,
+      "totalStudents": 249,
+      "totalTeachers": 9,
+      "redCellCount": 0,
+      "decliningGrades": 1,
+      "flaggedTeachers": 0,
+      "trend": "strong",
+      "topConcern": "Grade-level declining trends detected"
+    },
+    {
+      "name": "Riverside Academy",
+      "slug": "riverside-academy",
+      "overallCelebratePercent": 32,
+      "totalStudents": 244,
+      "totalTeachers": 9,
+      "redCellCount": 31,
+      "decliningGrades": 2,
+      "flaggedTeachers": 0,
+      "trend": "declining",
+      "topConcern": "Grade-level declining trends detected"
+    },
+    {
+      "name": "Oak Park Elementary School",
+      "slug": "oak-park",
+      "overallCelebratePercent": 38,
+      "totalStudents": 250,
+      "totalTeachers": 9,
+      "redCellCount": 15,
+      "decliningGrades": 0,
+      "flaggedTeachers": 3,
+      "trend": "stable",
+      "topConcern": "Grade 5 Number and Operations—Fractions — Laura Bennett's class (5B) 19pts below avg"
+    }
+  ]
+}

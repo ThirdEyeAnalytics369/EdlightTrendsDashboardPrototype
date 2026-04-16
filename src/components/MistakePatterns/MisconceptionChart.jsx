@@ -49,7 +49,7 @@ export default function MisconceptionChart({ misconceptions, teachers }) {
           color: colors.navy,
           margin: 0,
         }}>
-          Mistake Patterns
+          Key Learning Gaps — for PLC discussion
         </h4>
 
         {hasTeachers && (
@@ -77,7 +77,7 @@ export default function MisconceptionChart({ misconceptions, teachers }) {
                   transition: 'all 150ms',
                 }}
               >
-                {v === 'aggregated' ? 'Aggregated' : 'By Teacher'}
+                {v === 'aggregated' ? 'Standard Summary' : 'Cross-Teacher Comparison'}
               </button>
             ))}
           </div>

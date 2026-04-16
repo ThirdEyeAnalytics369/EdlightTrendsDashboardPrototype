@@ -4,7 +4,7 @@ import TrendArrow from '../Flags/TrendArrow';
 
 export default function GradeRow({
   grade,
-  standards,
+  domainGroups,
   gradeData,
   gradeOverall,
   gradeTrend,
@@ -52,29 +52,39 @@ export default function GradeRow({
         )}
       </div>
 
-      {/* Standard cells — only standards with data are passed in */}
-      {standards.map(code => {
-        const cellData = gradeData?.[code];
-        if (!cellData) return null;
+      {/* Standard cells grouped by domain with spacers */}
+      {domainGroups.map((group, groupIdx) => (
+        <div key={group.domain} style={{ display: 'contents' }}>
+          {/* Spacer between domain groups */}
+          {groupIdx > 0 && (
+            <div style={{ width: 16 }} />
+          )}
 
-        const hasFlag = cellData.teachers.some(t => t.belowAverage);
-        const isActive = activeCell?.grade === grade && activeCell?.standard === code;
+          {/* Cells within this domain */}
+          {group.standards.map(code => {
+            const cellData = gradeData?.[code];
+            if (!cellData) return null;
 
-        return (
-          <HeatMapCell
-            key={code}
-            masteryPercent={cellData.masteryPercent}
-            hasEnoughData={cellData.hasEnoughData}
-            totalStudents={cellData.totalStudents}
-            celebrateCount={cellData.celebrateCount}
-            naCount={cellData.naCount}
-            dominantMisconception={cellData.dominantMisconception}
-            hasFlag={hasFlag}
-            isActive={isActive}
-            onClick={() => onCellClick(grade, code)}
-          />
-        );
-      })}
+            const hasFlag = cellData.teachers.some(t => t.belowAverage);
+            const isActive = activeCell?.grade === grade && activeCell?.standard === code;
+
+            return (
+              <HeatMapCell
+                key={code}
+                masteryPercent={cellData.masteryPercent}
+                hasEnoughData={cellData.hasEnoughData}
+                totalStudents={cellData.totalStudents}
+                celebrateCount={cellData.celebrateCount}
+                naCount={cellData.naCount}
+                dominantMisconception={cellData.dominantMisconception}
+                hasFlag={hasFlag}
+                isActive={isActive}
+                onClick={() => onCellClick(grade, code)}
+              />
+            );
+          })}
+        </div>
+      ))}
     </div>
   );
 }

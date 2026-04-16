@@ -64,8 +64,9 @@ table {
 
 /* Print styles */
 @media print {
-  /* Hide sidebar and header controls */
-  nav, button, .no-print {
+  /* Hide sidebar, time filter pills, export menu, and any no-print elements */
+  [data-print-hide],
+  .no-print {
     display: none !important;
   }
 
@@ -77,9 +78,21 @@ table {
 
   body, html, #root {
     background: white !important;
+    height: auto !important;
   }
 
-  /* Remove shadows and borders for cleaner print */
+  /* Main content area takes full width when sidebar is hidden */
+  #root > div {
+    display: block !important;
+  }
+
+  #root > div > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* Remove shadows for cleaner print */
   div {
     box-shadow: none !important;
   }
